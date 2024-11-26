@@ -65,7 +65,7 @@ def telegram_webhook():
 def notify_user():
     try:
         data = request.json
-        chat_id = "6471494609"  # Chat ID تلگرام شما
+        chat_id = "6471494609"
         text = data.get("text", "پیام جدیدی دریافت شده است!")
         
         # چاپ اطلاعات برای بررسی
