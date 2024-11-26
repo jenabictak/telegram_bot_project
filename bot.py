@@ -1,3 +1,6 @@
+import nest_asyncio
+nest_asyncio.apply()
+
 from flask import Flask, request
 from telegram import Bot, Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
