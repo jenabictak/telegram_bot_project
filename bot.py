@@ -1,46 +1,83 @@
-from flask import Flask, request
 import logging
-import telegram
-
-# تنظیمات اصلی
-TOKEN = "8187523450:AAGE1Ard4no0HPZdBdl6kitl41vld-I62PM"  # توکن ربات تلگرام خود را اینجا قرار دهید
-bot = telegram.Bot(token=TOKEN)
+import requests
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# فعال کردن لاگ‌ها
-logging.basicConfig(level=logging.INFO)
+# توکن ربات تلگرام خود را اینجا وارد کنید
+BOT_TOKEN = "8187523450:AAGE1Ard4no0HPZdBdl6kitl41vld-I62PM"
+TELEGRAM_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
+
+
+# تنظیمات لاگ
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
 
 @app.route("/", methods=["GET"])
 def home():
-    return "Bot server is running!", 200
+    """صفحه اصلی برای تست سرور"""
+    return "Bot server is running!"
 
-@app.route(f"/{TOKEN}", methods=["POST"])
-def webhook():
+
+@app.route("/send_message", methods=["POST"])
+def send_message():
+    """
+    ارسال پیام به کاربر تلگرام از طریق Bot
+    این متد باید در بدن درخواست (Body) مقدار زیر را دریافت کند:
+    {
+        "chat_id": "CHAT_ID",
+        "text": "متن پیام"
+    }
+    """
     try:
-        # دریافت داده‌های وبهوک از تلگرام
-        update = telegram.Update.de_json(request.get_json(force=True), bot)
-        logger.info(f"Received update: {update}")
+        data = request.json
+        chat_id = data.get("chat_id")
+        text = data.get("text")
 
-        # پردازش پیام‌ها (به عنوان نمونه)
-        if update.message:
-            chat_id = update.message.chat_id
-            text = update.message.text
-            bot.send_message(chat_id=chat_id, text=f"Echo: {text}")
+        if not chat_id or not text:
+            return jsonify({"error": "chat_id and text are required"}), 400
 
-        return "Webhook received!", 200
+        # ارسال پیام به تلگرام
+        response = requests.post(
+            f"{TELEGRAM_API_URL}/sendMessage",
+            json={"chat_id": chat_id, "text": text},
+        )
+        return jsonify(response.json()), response.status_code
 
     except Exception as e:
-        logger.error(f"Error processing update: {e}")
-        return "Internal Server Error", 500
+        logger.exception("خطا در ارسال پیام")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/webhook/telegram", methods=["POST"])
+def telegram_webhook():
+    """
+    دریافت پیام از تلگرام (Webhook)
+    تلگرام پیام‌ها را به این مسیر ارسال می‌کند.
+    """
+    try:
+        data = request.json
+        logger.debug(f"داده دریافتی از تلگرام: {data}")
+
+        # بررسی پیام و پاسخ به آن
+        if "message" in data:
+            chat_id = data["message"]["chat"]["id"]
+            text = data["message"].get("text", "")
+
+            # پاسخ به پیام کاربر
+            response_text = f"شما این پیام را ارسال کردید: {text}"
+            requests.post(
+                f"{TELEGRAM_API_URL}/sendMessage",
+                json={"chat_id": chat_id, "text": response_text},
+            )
+
+        return jsonify({"status": "success"}), 200
+
+    except Exception as e:
+        logger.exception("خطا در پردازش پیام تلگرام")
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-
-@app.route('/send_message', methods=['POST'])
-def send_message():
-    data = request.json
-    message = data.get('message', '')
-    # پردازش پیام و ارسال پاسخ
-    return jsonify({'status': 'success', 'message': 'پیام ارسال شد!'})
