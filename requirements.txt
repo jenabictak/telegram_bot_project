@@ -1,3 +1,4 @@
 Flask
 nest-asyncio
+hypercorn
 python-telegram-bot==20.3
