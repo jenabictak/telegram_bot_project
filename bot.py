@@ -62,11 +62,15 @@ def telegram_webhook():
         return jsonify({"error": str(e)}), 500
         
 @app.route("/notify", methods=["POST"])
-def notify_user():
+def send_from_chatgpt():
+    """دریافت پیام از ChatGPT و ارسال به تلگرام"""
     try:
         data = request.json
         chat_id = data.get("chat_id")
-        text = data.get("text", "پیام جدیدی دریافت شده است!")
+        text = data.get("text")
+
+        if not chat_id or not text:
+            return jsonify({"error": "chat_id and text are required"}), 400
 
         # ارسال پیام به تلگرام
         response = requests.post(
@@ -74,9 +78,6 @@ def notify_user():
             json={"chat_id": chat_id, "text": text},
         )
         return jsonify(response.json()), response.status_code
-    except Exception as e:
-        logger.exception("خطا در ارسال اعلان")
-        return jsonify({"error": str(e)}), 500
 
 @app.route("/send_from_chatgpt", methods=["POST"])
 def send_from_chatgpt():
