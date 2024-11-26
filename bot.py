@@ -1,17 +1,19 @@
 import asyncio
-import os
-import signal
 from flask import Flask, request
-from telegram import Bot, Update
+from threading import Thread
+from telegram import Update, Bot
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-
-# پیکربندی Flask
-app = Flask(__name__)
 
 # تنظیمات تلگرام
 TOKEN = "8187523450:AAGE1Ard4no0HPZdBdl6kitl41vld-I62PM"
 CHAT_ID = 6471494609
+
+# ایجاد Flask اپلیکیشن
+app = Flask(__name__)
+
+# ایجاد ربات تلگرام
 bot = Bot(token=TOKEN)
+app_telegram = ApplicationBuilder().token(TOKEN).build()
 
 # دستورات تلگرام
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -21,12 +23,11 @@ async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     chat_id = update.message.chat_id
     await update.message.reply_text(f"Chat ID شما: {chat_id}")
 
-# ایجاد برنامه تلگرام
-app_telegram = ApplicationBuilder().token(TOKEN).build()
+# افزودن دستورها به اپلیکیشن تلگرام
 app_telegram.add_handler(CommandHandler("start", start))
 app_telegram.add_handler(CommandHandler("chatid", get_chat_id))
 
-# اعلان‌ها (Webhook)
+# مسیر ارسال پیام از طریق Flask
 @app.route('/send_message', methods=['POST'])
 def send_message():
     data = request.json
@@ -34,28 +35,16 @@ def send_message():
     bot.send_message(chat_id=CHAT_ID, text=message)
     return "پیام ارسال شد!", 200
 
-# اجرای همزمان Flask و Telegram
-async def main():
-    # اجرای Flask به صورت async
-    from hypercorn.asyncio import serve
-    from hypercorn.config import Config
+# اجرای Flask و ربات تلگرام
+def run_flask():
+    app.run(host="0.0.0.0", port=5000)
 
-    config = Config()
-    config.bind = ["0.0.0.0:5000"]
-
-    flask_task = asyncio.create_task(serve(app, config))
-    telegram_task = asyncio.create_task(app_telegram.run_polling())
-
-    await asyncio.gather(flask_task, telegram_task)
+async def run_telegram():
+    await app_telegram.run_polling()
 
 if __name__ == '__main__':
-    # حذف Signal Handling برای جلوگیری از خطای set_wakeup_fd
-    if os.name != "nt":
-        loop = asyncio.get_event_loop()
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            try:
-                loop.add_signal_handler(sig, lambda: None)
-            except NotImplementedError:
-                pass
+    # اجرای Flask در یک ترد جداگانه
+    Thread(target=run_flask).start()
 
-    asyncio.run(main())
+    # اجرای اپلیکیشن تلگرام در حلقه اصلی asyncio
+    asyncio.run(run_telegram())
