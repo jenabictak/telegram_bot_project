@@ -1,8 +1,12 @@
 import asyncio
+import nest_asyncio  # برای رفع مشکل حلقه‌های asyncio
 from flask import Flask, request
 from threading import Thread
 from telegram import Update, Bot
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+
+# فعال کردن قابلیت استفاده از حلقه موجود asyncio
+nest_asyncio.apply()
 
 # تنظیمات تلگرام
 TOKEN = "8187523450:AAGE1Ard4no0HPZdBdl6kitl41vld-I62PM"
