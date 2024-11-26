@@ -60,13 +60,16 @@ def telegram_webhook():
     except Exception as e:
         logger.exception("خطا در پردازش پیام تلگرام")
         return jsonify({"error": str(e)}), 500
-        
+
 @app.route("/notify", methods=["POST"])
 def notify_user():
     try:
         data = request.json
-        chat_id = "647494969"  # Chat ID تلگرام شما
+        chat_id = "6471494609"  # Chat ID تلگرام شما
         text = data.get("text", "پیام جدیدی دریافت شده است!")
+        
+        # چاپ اطلاعات برای بررسی
+        logger.debug(f"chat_id: {chat_id}, text: {text}")
 
         # ارسال پیام به تلگرام
         response = requests.post(
