@@ -1,3 +1,4 @@
+
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
@@ -17,3 +18,5 @@ if __name__ == "__main__":
 def get_chat_id(update, context):
     chat_id = update.message.chat_id
     update.message.reply_text(f"Chat ID شما: {chat_id}")
+
+dp.add_handler(CommandHandler("chatid", get_chat_id))
