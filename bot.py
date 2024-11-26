@@ -1,54 +1,39 @@
-import asyncio
-import nest_asyncio  # برای رفع مشکل حلقه‌های asyncio
 from flask import Flask, request
-from threading import Thread
-from telegram import Update, Bot
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+import logging
+import telegram
 
-# فعال کردن قابلیت استفاده از حلقه موجود asyncio
-nest_asyncio.apply()
+# تنظیمات اصلی
+TOKEN = "8187523450:AAGE1Ard4no0HPZdBdl6kitl41vld-I62PM"  # توکن ربات تلگرام خود را اینجا قرار دهید
+bot = telegram.Bot(token=TOKEN)
 
-# تنظیمات تلگرام
-TOKEN = "8187523450:AAGE1Ard4no0HPZdBdl6kitl41vld-I62PM"
-CHAT_ID = 6471494609
-
-# ایجاد Flask اپلیکیشن
 app = Flask(__name__)
 
-# ایجاد ربات تلگرام
-bot = Bot(token=TOKEN)
-app_telegram = ApplicationBuilder().token(TOKEN).build()
+# فعال کردن لاگ‌ها
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# دستورات تلگرام
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(f"سلام {update.effective_user.first_name}! این ربات Railway هست.")
+@app.route("/", methods=["GET"])
+def home():
+    return "Bot server is running!", 200
 
-async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    chat_id = update.message.chat_id
-    await update.message.reply_text(f"Chat ID شما: {chat_id}")
+@app.route(f"/{TOKEN}", methods=["POST"])
+def webhook():
+    try:
+        # دریافت داده‌های وبهوک از تلگرام
+        update = telegram.Update.de_json(request.get_json(force=True), bot)
+        logger.info(f"Received update: {update}")
 
-# افزودن دستورها به اپلیکیشن تلگرام
-app_telegram.add_handler(CommandHandler("start", start))
-app_telegram.add_handler(CommandHandler("chatid", get_chat_id))
+        # پردازش پیام‌ها (به عنوان نمونه)
+        if update.message:
+            chat_id = update.message.chat_id
+            text = update.message.text
+            bot.send_message(chat_id=chat_id, text=f"Echo: {text}")
 
-# مسیر ارسال پیام از طریق Flask
-@app.route('/send_message', methods=['POST'])
-def send_message():
-    data = request.json
-    message = data.get("message", "پیامی ارسال نشده است.")
-    bot.send_message(chat_id=CHAT_ID, text=message)
-    return "پیام ارسال شد!", 200
+        return "Webhook received!", 200
 
-# اجرای Flask و ربات تلگرام
-def run_flask():
+    except Exception as e:
+        logger.error(f"Error processing update: {e}")
+        return "Internal Server Error", 500
+
+if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-
-async def run_telegram():
-    await app_telegram.run_polling()
-
-if __name__ == '__main__':
-    # اجرای Flask در یک ترد جداگانه
-    Thread(target=run_flask).start()
-
-    # اجرای اپلیکیشن تلگرام در حلقه اصلی asyncio
-    asyncio.run(run_telegram())
