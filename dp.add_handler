@@ -1,0 +1,1 @@
+dp.add_handler(CommandHandler("chatid", get_chat_id))
