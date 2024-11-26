@@ -1,23 +1,11 @@
-import nest_asyncio
-nest_asyncio.apply()
-
 import asyncio
 import os
 import signal
-
-if os.name != "nt":  # فقط برای سیستم‌عامل‌های غیر ویندوز
-    loop = asyncio.get_event_loop()
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        try:
-            loop.add_signal_handler(sig, lambda: None)
-        except NotImplementedError:
-            pass
-
-
 from flask import Flask, request
 from telegram import Bot, Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
+# پیکربندی Flask
 app = Flask(__name__)
 
 # تنظیمات تلگرام
@@ -33,6 +21,7 @@ async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     chat_id = update.message.chat_id
     await update.message.reply_text(f"Chat ID شما: {chat_id}")
 
+# ایجاد برنامه تلگرام
 app_telegram = ApplicationBuilder().token(TOKEN).build()
 app_telegram.add_handler(CommandHandler("start", start))
 app_telegram.add_handler(CommandHandler("chatid", get_chat_id))
@@ -45,16 +34,28 @@ def send_message():
     bot.send_message(chat_id=CHAT_ID, text=message)
     return "پیام ارسال شد!", 200
 
+# اجرای همزمان Flask و Telegram
+async def main():
+    # اجرای Flask به صورت async
+    from hypercorn.asyncio import serve
+    from hypercorn.config import Config
+
+    config = Config()
+    config.bind = ["0.0.0.0:5000"]
+
+    flask_task = asyncio.create_task(serve(app, config))
+    telegram_task = asyncio.create_task(app_telegram.run_polling())
+
+    await asyncio.gather(flask_task, telegram_task)
+
 if __name__ == '__main__':
-    # اجرای Flask و ربات تلگرام به صورت جداگانه
-    from threading import Thread
-    import asyncio
+    # حذف Signal Handling برای جلوگیری از خطای set_wakeup_fd
+    if os.name != "nt":
+        loop = asyncio.get_event_loop()
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            try:
+                loop.add_signal_handler(sig, lambda: None)
+            except NotImplementedError:
+                pass
 
-    def run_flask():
-        app.run(host="0.0.0.0", port=5000)
-
-    def run_telegram():
-        asyncio.run(app_telegram.run_polling())
-
-    Thread(target=run_flask).start()
-    Thread(target=run_telegram).start()
+    asyncio.run(main())
