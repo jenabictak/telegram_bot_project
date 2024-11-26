@@ -12,7 +12,7 @@ async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 if __name__ == "__main__":
     # توکن ربات
-    TOKEN = "YOUR_BOT_TOKEN"
+    TOKEN = 8187523450:AAGE1Ard4no0HPZdBdl6kitl41vld-I62PM
 
     app = ApplicationBuilder().token(TOKEN).build()
 
