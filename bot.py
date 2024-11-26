@@ -60,7 +60,7 @@ def telegram_webhook():
     except Exception as e:
         logger.exception("خطا در پردازش پیام تلگرام")
         return jsonify({"error": str(e)}), 500
-#####
+        
 @app.route("/notify", methods=["POST"])
 def notify_user():
     try:
@@ -77,7 +77,7 @@ def notify_user():
     except Exception as e:
         logger.exception("خطا در ارسال اعلان")
         return jsonify({"error": str(e)}), 500
-#####
+
 @app.route("/send_from_chatgpt", methods=["POST"])
 def send_from_chatgpt():
     """دریافت پیام از ChatGPT و ارسال به تلگرام"""
