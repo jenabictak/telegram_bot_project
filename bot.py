@@ -37,3 +37,10 @@ def webhook():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
+@app.route('/send_message', methods=['POST'])
+def send_message():
+    data = request.json
+    message = data.get('message', '')
+    # پردازش پیام و ارسال پاسخ
+    return jsonify({'status': 'success', 'message': 'پیام ارسال شد!'})
