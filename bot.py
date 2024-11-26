@@ -67,16 +67,27 @@ def telegram_webhook():
 
             # پاسخ به پیام کاربر
             response_text = f"شما این پیام را ارسال کردید: {text}"
-            requests.post(
-                f"{TELEGRAM_API_URL}/sendMessage",
-                json={"chat_id": chat_id, "text": response_text},
-            )
+            send_message_to_telegram(chat_id, response_text)
 
         return jsonify({"status": "success"}), 200
 
     except Exception as e:
         logger.exception("خطا در پردازش پیام تلگرام")
         return jsonify({"error": str(e)}), 500
+
+
+def send_message_to_telegram(chat_id, text):
+    """
+    ارسال پیام به تلگرام از طریق API
+    """
+    try:
+        response = requests.post(
+            f"{TELEGRAM_API_URL}/sendMessage",
+            json={"chat_id": chat_id, "text": text},
+        )
+        logger.debug(f"پاسخ تلگرام: {response.status_code}, {response.text}")
+    except Exception as e:
+        logger.exception("خطا در ارسال پیام به تلگرام")
 
 
 if __name__ == "__main__":
