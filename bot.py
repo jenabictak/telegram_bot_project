@@ -1,6 +1,19 @@
 import nest_asyncio
 nest_asyncio.apply()
 
+import asyncio
+import os
+import signal
+
+if os.name != "nt":  # فقط برای سیستم‌عامل‌های غیر ویندوز
+    loop = asyncio.get_event_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        try:
+            loop.add_signal_handler(sig, lambda: None)
+        except NotImplementedError:
+            pass
+
+
 from flask import Flask, request
 from telegram import Bot, Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
