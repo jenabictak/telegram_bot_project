@@ -1,2 +1,3 @@
 Flask
+nest-asyncio
 python-telegram-bot==20.3
